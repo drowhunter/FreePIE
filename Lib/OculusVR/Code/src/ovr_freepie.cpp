@@ -96,6 +96,12 @@ int ovr_freepie_read(ovr_freepie_data *output)
 	return 0;
 }
 
+int ovr_freepie_setControllerVibration(ovrControllerType controllerType,float frequency, float amplitude) {
+	ovrResult result = ovr_SetControllerVibration(HMD, controllerType, frequency, amplitude);
+	return 0;
+}
+
+
 int ovr_freepie_destroy()
 {
 	ovr_Destroy(HMD); 

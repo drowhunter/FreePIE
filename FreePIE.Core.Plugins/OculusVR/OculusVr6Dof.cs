@@ -60,6 +60,10 @@ namespace FreePIE.Core.Plugins.OculusVR
         Touch = 0x03,
         Remote = 0x04,
         XBox = 0x10,
+        Object0 = 0x0100,
+        Object1 = 0x0200,
+        Object2 = 0x0400,
+        Object3 = 0x0800,
         Active = 0xff,      //Operate on or query whichever controller is active.
 
     }

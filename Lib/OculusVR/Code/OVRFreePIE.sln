@@ -5,6 +5,11 @@ VisualStudioVersion = 15.0.27004.2005
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "OVRFreePIE", "OVRFreePIE.vcxproj", "{C65F15EF-EBC4-4A3E-A322-E4967B7525DE}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{4E93B47C-DCC4-4052-9661-E04748BA4F6D}"
+	ProjectSection(SolutionItems) = preProject
+		cfg\ovr_freepie.def = cfg\ovr_freepie.def
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64

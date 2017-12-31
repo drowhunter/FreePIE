@@ -53,7 +53,21 @@ namespace FreePIE.Core.Plugins
         {
             Api.Center();
         }
+        /// <summary>
+        /// With this approach, haptics are controlled by simply turning vibrations on and off, 
+        /// while specifying a frequency (160Hz or 320Hz) and an amplitude (0 to 255). 
+        /// Non-buffered haptics are designed for simple effects that don't have tight latency 
+        /// requirements, since the controller requires 33ms to respond to the API call that modifies 
+        /// the haptics settings.
+        /// </summary>
+        /// <param name="frequency">Vibration is enabled by specifying the frequency. Specifying 0.0f will vibrate at 160Hz. Specifying 1.0f will vibrate at 320Hz </param>
+        /// <param name="amplitude"></param>
+        public void Vibrate(OvrControllerType controllerType, float frequency, float amplitude)
+        {
+            Api.Vibrate(controllerType, frequency, amplitude);
+        }
 
+        
         private OculusVrData _data;
 
         public OculusVr6Dof HeadPose { get { return _data.HeadPose; } }
@@ -169,6 +183,21 @@ namespace FreePIE.Core.Plugins
         public void center()
         {
             plugin.Center();
+        }
+        
+        public void vibrateLeft(float frequency, float amplitude)
+        {
+            plugin.Vibrate(OvrControllerType.LTouch, frequency, amplitude);
+        }
+
+        public void vibrateRight(float frequency, float amplitude)
+        {
+            plugin.Vibrate(OvrControllerType.RTouch, frequency, amplitude);
+        }
+
+        public void vibrateBoth(float frequency, float amplitude)
+        {
+            plugin.Vibrate(OvrControllerType.Touch, frequency, amplitude);
         }
     }
 }

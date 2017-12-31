@@ -36,3 +36,8 @@ if oculusVR.isRightTouchTracking:
 	diagnostics.watch(oculusVR.rightTouchPose.x)
 	diagnostics.watch(oculusVR.rightTouchPose.y)
 	diagnostics.watch(oculusVR.rightTouchPose.z)
+	
+if oculusVR.a:
+	oculusVR.vibrateRight (0.5,0.5)
+if oculusVR.x:
+	oculusVR.vibrateLeft (0.5,0.5)

@@ -41,5 +41,5 @@ int ovr_freepie_init();
 int ovr_freepie_read(ovr_freepie_data *output);
 int ovr_freepie_destroy();
 int ovr_freepie_reset_orientation();
-
+int ovr_freepie_setControllerVibration(ovrControllerType controllerType, float frequency, float amplitude);
 #endif

@@ -9,13 +9,15 @@ namespace FreePIE.Core.Plugins.OculusVR
     public static class Api
     {
         [DllImport("OVRFreePIE.dll", CallingConvention = CallingConvention.Cdecl)]
-        private extern static int ovr_freepie_init();
+        private static extern int ovr_freepie_init();
         [DllImport("OVRFreePIE.dll", CallingConvention = CallingConvention.Cdecl)]
-        private extern static int ovr_freepie_read(out OculusVrData output);
+        private static extern int ovr_freepie_read(out OculusVrData output);
         [DllImport("OVRFreePIE.dll")]
-        private extern static int ovr_freepie_destroy();
+        private static extern int ovr_freepie_destroy();
+        [DllImport("OVRFreePIE.dll", CallingConvention = CallingConvention.Cdecl)]
+        private static extern int ovr_freepie_setControllerVibration(uint controllerType, float frequency, float amplitude);
         [DllImport("OVRFreePIE.dll")]
-        private extern static int ovr_freepie_reset_orientation();
+        private static extern int ovr_freepie_reset_orientation();
 
         public static bool Init()
         {
@@ -37,6 +39,11 @@ namespace FreePIE.Core.Plugins.OculusVR
         public static bool Center()
         {
             return ovr_freepie_reset_orientation() == 0;
+        }
+
+        public static bool Vibrate(OvrControllerType controllerType, float frequency, float amplitude)
+        {
+            return ovr_freepie_setControllerVibration((uint)controllerType, frequency, amplitude) == 0;
         }
     }
 }
