@@ -81,7 +81,13 @@
     <Compile Include="AndroidPlugin.cs" />
     <Compile Include="ApplePlugin.cs" />
     <Compile Include="ComDevicePlugin.cs" />
-    <Compile Include="FreeImuPlugin.cs" />
+    <Compile Include="CronusPlugin.cs" />
+    <Compile Include="Cronus\ControllerEnums.cs" />
+    <Compile Include="Cronus\ExternalLib.cs" />
+    <Compile Include="Cronus\GCAPI_REPORT.cs" />
+    <Compile Include="Cronus\GcdAPI.cs" />
+    <Compile Include="Cronus\GcdAPIBase.cs" />
+    <Compile Include="Cronus\Input.cs" />
     <Compile Include="FreePieIOPlugin.cs" />
     <Compile Include="FreeSpacePlugin.cs" />
     <Compile Include="FreeTrackPlugin.cs" />
