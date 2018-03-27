@@ -6,6 +6,7 @@ using FreePIE.Core.Plugins.Globals;
 using Nefarius.ViGEm.Client;
 using Nefarius.ViGEm.Client.Targets;
 using Nefarius.ViGEm.Client.Targets.Xbox360;
+using Nefarius.ViGEm.Client.Targets.DualShock4;
 
 namespace FreePIE.Core.Plugins
 {
@@ -116,7 +117,7 @@ namespace FreePIE.Core.Plugins
 
     }
 
-    [Global(Name = "xbox")]
+    [Global(Name = "xinput")]
     public class XboxGlobal : IDisposable
     {
         public readonly int index = -1;
@@ -420,5 +421,316 @@ namespace FreePIE.Core.Plugins
             }
         }
     }
-    
+
+    [Global(Name = "dualshock")]
+    public class DS4Global : IDisposable
+    {
+        public readonly int index = -1;
+
+        private ViGemPlugin _plugin;
+
+        private DualShock4Controller _controller;
+        private DualShock4Report _report = new DualShock4Report();
+
+        //public x360ButtonCollection button { get; }
+
+        public DS4Global(int index, ViGemPlugin plugin)
+        {
+            _plugin = plugin;
+            _controller = new DualShock4Controller(plugin.Client);
+            _controller.FeedbackReceived += _controller_FeedbackReceived;
+            _controller.Connect();
+
+            this.index = index;
+
+            _plugin.PlugController(index);
+
+        }
+
+        public event RumbleEvent onRumble;
+        public delegate void RumbleEvent(byte largeMotor, byte smallMotor, LightbarColor led);
+
+        private void _controller_FeedbackReceived(object sender, DualShock4FeedbackReceivedEventArgs e)
+        {
+            onRumble?.Invoke(e.LargeMotor, e.SmallMotor, e.LightbarColor);
+        }
+
+        internal void Update()
+        {
+            if (_report != null)
+            {
+                _controller.SendReport(_report);
+                //_prevReport = _report;
+            }
+            _report = new DualShock4Report();
+
+        }
+
+        private DualShock4Buttons[] enumToArray(DualShock4Buttons buttons)
+        {
+            var a = Enum.GetValues(typeof(DualShock4Buttons)).Cast<DualShock4Buttons>();
+            var pressed = a.Where(b => (b & buttons) == b).ToArray();
+            return pressed;
+        }
+        private DualShock4Buttons buttons
+        {
+            get { return (DualShock4Buttons)_report?.Buttons; }
+        }
+
+        public bool a
+        {
+            get { return buttons.HasFlag(DualShock4Buttons.Cross); }
+            set { _report.SetButtonState(DualShock4Buttons.A, value); }
+        }
+
+        public bool b
+        {
+            get { return buttons.HasFlag(DualShock4Buttons.B); }
+            set
+            {
+                _report.SetButtonState(DualShock4Buttons.B, value);
+            }
+        }
+
+        public bool x
+        {
+            get { return buttons.HasFlag(DualShock4Buttons.X); }
+            set
+            {
+                _report.SetButtonState(DualShock4Buttons.X, value);
+            }
+        }
+
+        public bool y
+        {
+            get { return buttons.HasFlag(DualShock4Buttons.Y); }
+            set
+            {
+                _report.SetButtonState(DualShock4Buttons.Y, value);
+            }
+        }
+
+        public bool leftShoulder
+        {
+            get { return buttons.HasFlag(DualShock4Buttons.LeftShoulder); }
+            set
+            {
+                _report.SetButtonState(DualShock4Buttons.LeftShoulder, value);
+            }
+        }
+
+        public bool rightShoulder
+        {
+            get { return buttons.HasFlag(DualShock4Buttons.RightShoulder); }
+            set
+            {
+                _report.SetButtonState(DualShock4Buttons.RightShoulder, value);
+            }
+        }
+
+        public bool start
+        {
+            get { return buttons.HasFlag(DualShock4Buttons.Start); }
+            set
+            {
+                _report.SetButtonState(DualShock4Buttons.Start, value);
+            }
+        }
+
+        public bool back
+        {
+            get { return buttons.HasFlag(DualShock4Buttons.Back); }
+            set
+            {
+                _report.SetButtonState(DualShock4Buttons.Back, value);
+            }
+        }
+
+        public bool up
+        {
+            get { return buttons.HasFlag(DualShock4Buttons.Up); }
+            set
+            {
+                _report.SetButtonState(DualShock4Buttons.Up, value);
+            }
+        }
+
+        public bool down
+        {
+            get { return buttons.HasFlag(DualShock4Buttons.Down); }
+            set
+            {
+                _report.SetButtonState(DualShock4Buttons.Down, value);
+            }
+        }
+
+        public bool left
+        {
+            get { return buttons.HasFlag(DualShock4Buttons.Left); }
+            set
+            {
+                _report.SetButtonState(DualShock4Buttons.Left, value);
+            }
+        }
+
+        public bool right
+        {
+            get { return buttons.HasFlag(DualShock4Buttons.Right); }
+            set
+            {
+                _report.SetButtonState(DualShock4Buttons.Right, value);
+            }
+        }
+
+        public bool leftThumb
+        {
+            get { return buttons.HasFlag(DualShock4Buttons.LeftThumb); }
+            set
+            {
+                _report.SetButtonState(DualShock4Buttons.LeftThumb, value);
+            }
+        }
+
+        public bool rightThumb
+        {
+            get { return buttons.HasFlag(DualShock4Buttons.RightThumb); }
+            set
+            {
+                _report.SetButtonState(DualShock4Buttons.RightThumb, value);
+            }
+        }
+
+        /// <summary>
+        /// Acceptable values range 0 - 1
+        /// </summary>
+        public double leftTrigger
+        {
+            get { return _report.LeftTrigger / 255.0; }
+            set
+            {
+                if (isBetween(value, 0, 1))
+                {
+                    var v = (short)ensureMapRange(value, 0, 1, 0, 255);
+                    _report.SetAxis(DualShock4Axes.LeftTrigger, v);
+                }
+            }
+        }
+
+
+        public double rightTrigger
+        {
+            get { return _report.RightTrigger / 255.0; }
+            set
+            {
+                if (isBetween(value, 0, 1))
+                {
+                    var v = (short)ensureMapRange(value, 0, 1, 0, 255);
+                    _report.SetAxis(DualShock4Axes.RightTrigger, v);
+                }
+            }
+        }
+
+        public double leftStickX
+        {
+            get
+            {
+                if (_report.LeftThumbX < 0)
+                    return _report.LeftThumbX / 32768.0;
+                else
+                    return _report.LeftThumbX / 32767.0;
+            }
+            set
+            {
+                _report.SetAxis(DualShock4Axes.LeftThumbX, (short)ensureMapRange(value, -1, 1, -32768, 32767));
+            }
+        }
+
+        public double leftStickY
+        {
+            get
+            {
+                if (_report.LeftThumbX < 0)
+                    return _report.LeftThumbY / 32768.0;
+                else
+                    return _report.LeftThumbY / 32767.0;
+            }
+            set
+            {
+                _report.SetAxis(DualShock4Axes.LeftThumbY, (short)ensureMapRange(value, -1, 1, -32768, 32767));
+            }
+        }
+
+        public double rightStickX
+        {
+            get
+            {
+                if (_report.RightThumbX < 0)
+                    return _report.RightThumbX / 32768.0;
+                else
+                    return _report.RightThumbX / 32767.0;
+            }
+            set
+            {
+                _report.SetAxis(DualShock4Axes.RightThumbX, (short)ensureMapRange(value, -1, 1, -32768, 32767));
+            }
+
+        }
+
+
+        public double rightStickY
+        {
+            get
+            {
+                if (_report.RightThumbY < 0)
+                    return _report.RightThumbY / 32768.0;
+                else
+                    return _report.RightThumbY / 32767.0;
+            }
+            set
+            {
+                _report.SetAxis(DualShock4Axes.RightThumbY, (short)ensureMapRange(value, -1, 1, -32768, 32767));
+            }
+
+        }
+
+
+        private bool isBetween(double val, double min, double max, bool isInclusive = true)
+        {
+            if (isInclusive)
+            {
+                return (val >= min) && (val <= max);
+            }
+            else
+            {
+                return (val > min) && (val < max);
+            }
+        }
+
+        private double mapRange(double x, double xMin, double xMax, double yMin, double yMax)
+        {
+            return yMin + (yMax - yMin) * (x - xMin) / (xMax - xMin);
+        }
+
+        private double ensureMapRange(double x, double xMin, double xMax, double yMin, double yMax)
+        {
+            return Math.Max(Math.Min(((x - xMin) / (xMax - xMin)) * (yMax - yMin) + yMin, yMax), yMin);
+        }
+
+        public void Disconnect()
+        {
+            if (_controller != null)
+            {
+                _controller.Disconnect();
+            }
+        }
+        public void Dispose()
+        {
+            if (_controller != null)
+            {
+                Disconnect();
+                _controller.Dispose();
+                _controller = null;
+            }
+        }
+    }
 }
