@@ -13,7 +13,7 @@ namespace FreePIE.Core.Plugins
     [GlobalType(Type = typeof(DS4Global), IsIndexed = true)]
     public class DualShock4Plugin : ViGemPlugin
     {
-        private List<DS4Global> _globals;
+        
         public override object CreateGlobal()
         {
             _globals = new List<DS4Global>();
@@ -29,7 +29,26 @@ namespace FreePIE.Core.Plugins
         }
     }
 
+
     [GlobalType(Type = typeof(XboxGlobal), IsIndexed = true)]
+    public class XboxGamePadPlugin : ViGemPlugin
+    {
+        public override object CreateGlobal()
+        {
+            _globals = new List<VigemGlobal>();
+            return new GlobalIndexer<XboxGlobal>(CreateGlobal);
+        }
+
+        private XboxGlobal CreateGlobal(int index)
+        {
+            var global = new XboxGlobal(index, this);
+            _globals.Add(global);
+
+            return global;
+        }
+    }
+
+    
     public abstract class ViGemPlugin : Plugin
     {
         /// <summary>
@@ -45,7 +64,7 @@ namespace FreePIE.Core.Plugins
             
         }
 
-        private List<XboxGlobal> _globals;
+        protected List<VigemGlobal> _globals;
         public ViGEmClient Client { get; private set; }
 
         private List<int> _connectedControllers = new List<int>();
@@ -87,6 +106,7 @@ namespace FreePIE.Core.Plugins
             }
         }
 
+        
         public override Action Start()
         {
             try
@@ -113,19 +133,7 @@ namespace FreePIE.Core.Plugins
             _connectedControllers.Clear();
         }
 
-        public override object CreateGlobal()
-        {
-            _globals = new List<XboxGlobal>();
-            return new GlobalIndexer<XboxGlobal>(CreateGlobal);
-        }
-
-        private XboxGlobal CreateGlobal(int index)
-        {
-            var global = new XboxGlobal(index, this);
-            _globals.Add(global);
-
-            return global;
-        }
+        
 
         public override void DoBeforeNextExecute()
         {
@@ -136,26 +144,50 @@ namespace FreePIE.Core.Plugins
 
     }
 
-    [Global(Name = "xbox")]
-    public class XboxGlobal : IDisposable
+    public abstract class VigemGlobal : IDisposable
     {
+        protected ViGemPlugin _plugin;
         public readonly int index = -1;
+        protected List<VigemGlobal> _globals;
 
-        private ViGemPlugin _plugin;
+        public VigemGlobal(int index, ViGemPlugin plugin)
+        {
+            _plugin = plugin;
+            this.index = index;
+
+        }
+
+        public void Dispose()
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual void Update()
+        {
+
+        }
+    }
+
+    [Global(Name = "xbox")]
+    public class XboxGlobal : VigemGlobal
+    {
+        
+
+        //private ViGemPlugin _plugin;
 
         private Xbox360Controller _controller;
         private Xbox360Report _report = new Xbox360Report();
 
         //public x360ButtonCollection button { get; }
 
-        public XboxGlobal(int index, ViGemPlugin plugin)
+        public XboxGlobal(int index, ViGemPlugin plugin) : base(index,plugin)
         {
-            _plugin = plugin;
+            
             _controller = new Xbox360Controller(plugin.Client);
             _controller.FeedbackReceived += _controller_FeedbackReceived;
             _controller.Connect();
 
-            this.index = index;
+            
 
             _plugin.PlugController(index);
 
@@ -443,7 +475,7 @@ namespace FreePIE.Core.Plugins
 
 
     [Global(Name = "dualshock")]
-    public class DS4Global : IDisposable
+    public class DS4Global : VigemGlobal
     {
         public readonly int index = -1;
 
@@ -454,9 +486,8 @@ namespace FreePIE.Core.Plugins
 
         //public x360ButtonCollection button { get; }
 
-        public DS4Global(int index, ViGemPlugin plugin)
+        public DS4Global(int index, ViGemPlugin plugin) :base(index,plugin)
         {
-            _plugin = plugin;
             _controller = new DualShock4Controller(plugin.Client);
             _controller.FeedbackReceived += _controller_FeedbackReceived;
             _controller.Connect();
