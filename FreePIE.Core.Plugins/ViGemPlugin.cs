@@ -13,10 +13,10 @@ namespace FreePIE.Core.Plugins
     [GlobalType(Type = typeof(DS4Global), IsIndexed = true)]
     public class DualShock4Plugin : ViGemPlugin
     {
-        
+        public override string FriendlyName { get { return "DualShock4 Virtual Bus"; } }
         public override object CreateGlobal()
         {
-            _globals = new List<DS4Global>();
+            _globals = new List<VigemGlobal>();
             return new GlobalIndexer<DS4Global>(CreateGlobal);
         }
 
@@ -24,7 +24,7 @@ namespace FreePIE.Core.Plugins
         {
             var global = new DS4Global(index, this);
             _globals.Add(global);
-
+            PlugController(index);
             return global;
         }
     }
@@ -33,6 +33,7 @@ namespace FreePIE.Core.Plugins
     [GlobalType(Type = typeof(XboxGlobal), IsIndexed = true)]
     public class XboxGamePadPlugin : ViGemPlugin
     {
+        public override string FriendlyName { get { return "X360 Virtual Bus"; } }
         public override object CreateGlobal()
         {
             _globals = new List<VigemGlobal>();
@@ -43,7 +44,7 @@ namespace FreePIE.Core.Plugins
         {
             var global = new XboxGlobal(index, this);
             _globals.Add(global);
-
+            PlugController(index);
             return global;
         }
     }
@@ -51,6 +52,8 @@ namespace FreePIE.Core.Plugins
     
     public abstract class ViGemPlugin : Plugin
     {
+        
+
         /// <summary>
         /// Indicates what went wrong
         /// </summary>
@@ -84,29 +87,6 @@ namespace FreePIE.Core.Plugins
             }
         }
 
-        public void PlugController(int index)
-        {
-            if (!IsConnected || _errorOccured != ErrorState.OK)
-                return;
-
-            if (!_connectedControllers.Contains(index))
-            {
-                _connectedControllers.Add(index);
-            }
-        }
-
-        public void UnPlugController(int index)
-        {
-            if (!IsConnected || _errorOccured != ErrorState.OK)
-                return;
-
-            if (_connectedControllers.Contains(index))
-            {
-                _connectedControllers.Remove(index);
-            }
-        }
-
-        
         public override Action Start()
         {
             try
@@ -124,10 +104,10 @@ namespace FreePIE.Core.Plugins
 
         public override void Stop()
         {
-            _globals.ForEach(d =>
+            _globals.ForEach(g =>
             {
-                d.Dispose();
-                UnPlugController(d.index);
+                g.Disconnect();
+                UnPlugController(g.index);
             });
 
             _connectedControllers.Clear();
@@ -140,39 +120,75 @@ namespace FreePIE.Core.Plugins
             _globals.ForEach(d => d.Update());
         }
 
-        public override string FriendlyName { get { return "ViGEm Virtual Bus"; } }
+        
+
+        protected void PlugController(int index)
+        {
+            if (!IsConnected || _errorOccured != ErrorState.OK)
+                return;
+
+            if (!_connectedControllers.Contains(index))
+            {
+                _connectedControllers.Add(index);
+            }
+        }
+
+        protected void UnPlugController(int index)
+        {
+            if (!IsConnected || _errorOccured != ErrorState.OK)
+                return;
+
+            if (_connectedControllers.Contains(index))
+            {
+                _connectedControllers.Remove(index);
+            }
+        }
 
     }
 
-    public abstract class VigemGlobal : IDisposable
+    public abstract class VigemGlobal 
     {
-        protected ViGemPlugin _plugin;
+        //protected ViGemPlugin _plugin;
         public readonly int index = -1;
         protected List<VigemGlobal> _globals;
 
-        public VigemGlobal(int index, ViGemPlugin plugin)
+        public VigemGlobal(int index)//, ViGemPlugin plugin)
         {
-            _plugin = plugin;
+            //_plugin = plugin;
             this.index = index;
 
         }
 
-        public void Dispose()
+        protected bool isBetween(double val, double min, double max, bool isInclusive = true)
         {
-            throw new NotImplementedException();
+            if (isInclusive)
+            {
+                return (val >= min) && (val <= max);
+            }
+            else
+            {
+                return (val > min) && (val < max);
+            }
         }
 
-        public virtual void Update()
+        protected double mapRange(double x, double xMin, double xMax, double yMin, double yMax)
         {
-
+            return yMin + (yMax - yMin) * (x - xMin) / (xMax - xMin);
         }
+
+        protected double ensureMapRange(double x, double xMin, double xMax, double yMin, double yMax)
+        {
+            return Math.Max(Math.Min(((x - xMin) / (xMax - xMin)) * (yMax - yMin) + yMin, yMax), yMin);
+        }
+
+        public abstract void Disconnect();
+
+        internal abstract void Update();
     }
 
     [Global(Name = "xbox")]
-    public class XboxGlobal : VigemGlobal
+    public class XboxGlobal : VigemGlobal, IDisposable
     {
-        
-
         //private ViGemPlugin _plugin;
 
         private Xbox360Controller _controller;
@@ -180,17 +196,11 @@ namespace FreePIE.Core.Plugins
 
         //public x360ButtonCollection button { get; }
 
-        public XboxGlobal(int index, ViGemPlugin plugin) : base(index,plugin)
+        public XboxGlobal(int index, ViGemPlugin plugin) : base(index)//,plugin)
         {
-            
             _controller = new Xbox360Controller(plugin.Client);
             _controller.FeedbackReceived += _controller_FeedbackReceived;
             _controller.Connect();
-
-            
-
-            _plugin.PlugController(index);
-
         }
 
         public event RumbleEvent onRumble;
@@ -201,12 +211,11 @@ namespace FreePIE.Core.Plugins
             onRumble?.Invoke(e.LargeMotor, e.SmallMotor, e.LedNumber);            
         }
 
-        internal void Update()
+        internal override void Update()
         {
             if (_report != null)
             {
-                _controller.SendReport(_report);
-                //_prevReport = _report;
+                _controller.SendReport(_report);                
             }
             _report = new Xbox360Report();
 
@@ -395,7 +404,7 @@ namespace FreePIE.Core.Plugins
             }
             set
             {
-                _report.SetAxis(Xbox360Axes.LeftThumbY, (short)ensureMapRange(value, -1, 1, -32768, 32767));
+                _report.SetAxis(Xbox360Axes.LeftThumbY, (short)ensureMapRange(value, 1, -1, -32768, 32767));
             }
         }
 
@@ -427,35 +436,15 @@ namespace FreePIE.Core.Plugins
             }
             set
             {
-                _report.SetAxis(Xbox360Axes.RightThumbY, (short)ensureMapRange(value, -1, 1, -32768, 32767));
+                _report.SetAxis(Xbox360Axes.RightThumbY, (short)ensureMapRange(value, 1, -1, -32768, 32767));
             }
 
         }
 
 
-        private bool isBetween(double val, double min, double max, bool isInclusive = true)
-        {
-            if (isInclusive)
-            {
-                return (val >= min) && (val <= max);
-            }
-            else
-            {
-                return (val > min) && (val < max);
-            }
-        }
+        
 
-        private double mapRange(double x, double xMin, double xMax, double yMin, double yMax)
-        {
-            return yMin + (yMax - yMin) * (x - xMin) / (xMax - xMin);
-        }
-
-        private double ensureMapRange(double x, double xMin, double xMax, double yMin, double yMax)
-        {
-            return Math.Max(Math.Min(((x - xMin) / (xMax - xMin)) * (yMax - yMin) + yMin, yMax), yMin);
-        }
-
-        public void Disconnect()
+        public override void Disconnect()
         {
             if (_controller != null)
             {
@@ -475,7 +464,7 @@ namespace FreePIE.Core.Plugins
 
 
     [Global(Name = "dualshock")]
-    public class DS4Global : VigemGlobal
+    public class DS4Global : VigemGlobal, IDisposable
     {
         public readonly int index = -1;
 
@@ -486,16 +475,11 @@ namespace FreePIE.Core.Plugins
 
         //public x360ButtonCollection button { get; }
 
-        public DS4Global(int index, ViGemPlugin plugin) :base(index,plugin)
+        public DS4Global(int index, ViGemPlugin plugin) :base(index)
         {
             _controller = new DualShock4Controller(plugin.Client);
             _controller.FeedbackReceived += _controller_FeedbackReceived;
             _controller.Connect();
-
-            this.index = index;
-
-            _plugin.PlugController(index);
-
         }
 
         public event RumbleEvent onRumble;
@@ -506,14 +490,21 @@ namespace FreePIE.Core.Plugins
             onRumble?.Invoke(e.LargeMotor, e.SmallMotor, e.LightbarColor);
         }
 
-        internal void Update()
+        internal override void Update()
         {
             if (_report != null)
             {
-                DualShock4DPadValues d = conv(_DpadFlags);
-                _report.SetDPad(d);
-                _controller.SendReport(_report);
-                //_prevReport = _report;
+                if (_DpadFlags > 0)
+                {
+                    DualShock4DPadValues d = conv(_DpadFlags);
+
+                    _report.SetDPad(d);
+                }
+                else
+                {
+                    //_report.SetDPad(DualShock4DPadValues.None);
+                }
+                _controller.SendReport(_report);                
             }
             _report = new DualShock4Report();
 
@@ -530,13 +521,13 @@ namespace FreePIE.Core.Plugins
             get { return (DualShock4Buttons)_report?.Buttons; }
         }
 
-        public bool a
+        public bool cross
         {
             get { return buttons.HasFlag(DualShock4Buttons.Cross); }
             set { _report.SetButtonState(DualShock4Buttons.Cross, value); }
         }
 
-        public bool b
+        public bool circle
         {
             get { return buttons.HasFlag(DualShock4Buttons.Circle); }
             set
@@ -545,7 +536,7 @@ namespace FreePIE.Core.Plugins
             }
         }
 
-        public bool x
+        public bool square
         {
             get { return buttons.HasFlag(DualShock4Buttons.Square); }
             set
@@ -554,7 +545,7 @@ namespace FreePIE.Core.Plugins
             }
         }
 
-        public bool y
+        public bool triangle
         {
             get { return buttons.HasFlag(DualShock4Buttons.Triangle); }
             set
@@ -563,7 +554,7 @@ namespace FreePIE.Core.Plugins
             }
         }
 
-        public bool leftShoulder
+        public bool L1
         {
             get { return buttons.HasFlag(DualShock4Buttons.ShoulderLeft); }
             set
@@ -572,7 +563,7 @@ namespace FreePIE.Core.Plugins
             }
         }
 
-        public bool rightShoulder
+        public bool R1
         {
             get { return buttons.HasFlag(DualShock4Buttons.ShoulderRight); }
             set
@@ -581,7 +572,7 @@ namespace FreePIE.Core.Plugins
             }
         }
 
-        public bool options
+        public bool start
         {
             get { return buttons.HasFlag(DualShock4Buttons.Options); }
             set
@@ -590,7 +581,7 @@ namespace FreePIE.Core.Plugins
             }
         }
 
-        public bool share
+        public bool select
         {
             get { return buttons.HasFlag(DualShock4Buttons.Share); }
             set
@@ -701,14 +692,11 @@ namespace FreePIE.Core.Plugins
         {
             get
             {
-                if (_report.LeftThumbX < 0)
-                    return _report.LeftThumbX / 32768.0;
-                else
-                    return _report.LeftThumbX / 32767.0;
+                return mapRange(_report.LeftThumbX, 0, 255, -1, 1);
             }
             set
             {
-                _report.SetAxis(DualShock4Axes.LeftThumbX,(byte) ensureMapRange(value, -1, 1, -256, 257)); //(short)ensureMapRange(value, -1, 1, -32768, 32767));
+                _report.SetAxis(DualShock4Axes.LeftThumbX,(byte) ensureMapRange(value, -1, 1, 0, 255)); //(short)ensureMapRange(value, -1, 1, -32768, 32767));
             }
         }
 
@@ -716,15 +704,11 @@ namespace FreePIE.Core.Plugins
         {
             get
             {
-                if (_report.LeftThumbX < 0)
-                    return _report.LeftThumbY / 32768.0;
-                else
-                    return _report.LeftThumbY / 32767.0;
+                return mapRange(_report.LeftThumbY, 0, 255, -1, 1); 
             }
             set
             {
-                //_report.SetAxis(DualShock4Axes.LeftThumbY, (short)ensureMapRange(value, -1, 1, -32768, 32767));
-                _report.SetAxis(DualShock4Axes.RightThumbY, (byte)ensureMapRange(value, -1, 1, -256, 257));
+                _report.SetAxis(DualShock4Axes.LeftThumbY, (byte)ensureMapRange(value, -1, 1, 0, 255));
             }
         }
 
@@ -732,14 +716,11 @@ namespace FreePIE.Core.Plugins
         {
             get
             {
-                if (_report.RightThumbX < 0)
-                    return _report.RightThumbX / 32768.0;
-                else
-                    return _report.RightThumbX / 32767.0;
+                return mapRange(_report.RightThumbX, 0, 255, -1, 1);              
             }
             set
             {
-                _report.SetAxis(DualShock4Axes.RightThumbX, (byte)ensureMapRange(value, -1, 1, -32768, 32767));
+                _report.SetAxis(DualShock4Axes.RightThumbX, (byte)ensureMapRange(value, -1, 1, 0, 255));
             }
 
         }
@@ -749,45 +730,22 @@ namespace FreePIE.Core.Plugins
         {
             get
             {
-                if (_report.RightThumbY < 0)
-                    return _report.RightThumbY / 32768.0;
-                else
-                    return _report.RightThumbY / 32767.0;
+                return mapRange(_report.RightThumbY, 0, 255, -1, 1); 
             }
             set
             {
-                _report.SetAxis(DualShock4Axes.RightThumbY, (byte)ensureMapRange(value, -1, 1, -32768, 32767));
+                _report.SetAxis(DualShock4Axes.RightThumbY, (byte)ensureMapRange(value, -1, 1, 0, 255));
             }
 
         }
 
 
-        private bool isBetween(double val, double min, double max, bool isInclusive = true)
-        {
-            if (isInclusive)
-            {
-                return (val >= min) && (val <= max);
-            }
-            else
-            {
-                return (val > min) && (val < max);
-            }
-        }
-
-        private double mapRange(double x, double xMin, double xMax, double yMin, double yMax)
-        {
-            return yMin + (yMax - yMin) * (x - xMin) / (xMax - xMin);
-        }
-
-        private double ensureMapRange(double x, double xMin, double xMax, double yMin, double yMax)
-        {
-            return Math.Max(Math.Min(((x - xMin) / (xMax - xMin)) * (yMax - yMin) + yMin, yMax), yMin);
-        }
+        
 
         [Flags]
         private enum dpadFlags
         {
-            Up = 1 << 0, Right = 1 << 1, Down = 1 << 2, Left = 1 << 3
+           None = 0,  Up = 1 << 0, Right = 1 << 1, Down = 1 << 2, Left = 1 << 3
         }
 
         dpadFlags _DpadFlags = 0;
@@ -795,7 +753,7 @@ namespace FreePIE.Core.Plugins
         private static DualShock4DPadValues conv(dpadFlags flags)
         {
 
-            DualShock4DPadValues retval = 0;
+            DualShock4DPadValues retval = DualShock4DPadValues.None;
 
             var g = new List<KeyValuePair<dpadFlags, DualShock4DPadValues>>()
             {
@@ -809,15 +767,23 @@ namespace FreePIE.Core.Plugins
                 new KeyValuePair<dpadFlags, DualShock4DPadValues>( dpadFlags.Up | dpadFlags.Left, DualShock4DPadValues.Northwest)
             };
             //Console.WriteLine(g.Aggregate((a,c) => string.Format("{0},{1}",a,c)));
-            if (flags != 0)
-                retval = g.Single(gg => gg.Key == flags).Value;
+            try
+            {
+                if (flags != 0)
+                    retval = g.Single(gg => gg.Key == flags).Value;
 
+            }
+            catch
+            {
+
+                
+            }
 
             return retval;
 
         }
 
-        public void Disconnect()
+        public override void Disconnect()
         {
             if (_controller != null)
             {
