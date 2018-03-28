@@ -10,8 +10,27 @@ using Nefarius.ViGEm.Client.Targets.DualShock4;
 
 namespace FreePIE.Core.Plugins
 {
+    [GlobalType(Type = typeof(DS4Global), IsIndexed = true)]
+    public class DualShock4Plugin : ViGemPlugin
+    {
+        private List<DS4Global> _globals;
+        public override object CreateGlobal()
+        {
+            _globals = new List<DS4Global>();
+            return new GlobalIndexer<DS4Global>(CreateGlobal);
+        }
+
+        private DS4Global CreateGlobal(int index)
+        {
+            var global = new DS4Global(index, this);
+            _globals.Add(global);
+
+            return global;
+        }
+    }
+
     [GlobalType(Type = typeof(XboxGlobal), IsIndexed = true)]
-    public class ViGemPlugin : Plugin
+    public abstract class ViGemPlugin : Plugin
     {
         /// <summary>
         /// Indicates what went wrong
@@ -117,7 +136,7 @@ namespace FreePIE.Core.Plugins
 
     }
 
-    [Global(Name = "xinput")]
+    [Global(Name = "xbox")]
     public class XboxGlobal : IDisposable
     {
         public readonly int index = -1;
@@ -422,6 +441,7 @@ namespace FreePIE.Core.Plugins
         }
     }
 
+
     [Global(Name = "dualshock")]
     public class DS4Global : IDisposable
     {
@@ -459,6 +479,8 @@ namespace FreePIE.Core.Plugins
         {
             if (_report != null)
             {
+                DualShock4DPadValues d = conv(_DpadFlags);
+                _report.SetDPad(d);
                 _controller.SendReport(_report);
                 //_prevReport = _report;
             }
@@ -480,123 +502,137 @@ namespace FreePIE.Core.Plugins
         public bool a
         {
             get { return buttons.HasFlag(DualShock4Buttons.Cross); }
-            set { _report.SetButtonState(DualShock4Buttons.A, value); }
+            set { _report.SetButtonState(DualShock4Buttons.Cross, value); }
         }
 
         public bool b
         {
-            get { return buttons.HasFlag(DualShock4Buttons.B); }
+            get { return buttons.HasFlag(DualShock4Buttons.Circle); }
             set
             {
-                _report.SetButtonState(DualShock4Buttons.B, value);
+                _report.SetButtonState(DualShock4Buttons.Circle, value);
             }
         }
 
         public bool x
         {
-            get { return buttons.HasFlag(DualShock4Buttons.X); }
+            get { return buttons.HasFlag(DualShock4Buttons.Square); }
             set
             {
-                _report.SetButtonState(DualShock4Buttons.X, value);
+                _report.SetButtonState(DualShock4Buttons.Square, value);
             }
         }
 
         public bool y
         {
-            get { return buttons.HasFlag(DualShock4Buttons.Y); }
+            get { return buttons.HasFlag(DualShock4Buttons.Triangle); }
             set
             {
-                _report.SetButtonState(DualShock4Buttons.Y, value);
+                _report.SetButtonState(DualShock4Buttons.Triangle, value);
             }
         }
 
         public bool leftShoulder
         {
-            get { return buttons.HasFlag(DualShock4Buttons.LeftShoulder); }
+            get { return buttons.HasFlag(DualShock4Buttons.ShoulderLeft); }
             set
             {
-                _report.SetButtonState(DualShock4Buttons.LeftShoulder, value);
+                _report.SetButtonState(DualShock4Buttons.ShoulderLeft, value);
             }
         }
 
         public bool rightShoulder
         {
-            get { return buttons.HasFlag(DualShock4Buttons.RightShoulder); }
+            get { return buttons.HasFlag(DualShock4Buttons.ShoulderRight); }
             set
             {
-                _report.SetButtonState(DualShock4Buttons.RightShoulder, value);
+                _report.SetButtonState(DualShock4Buttons.ShoulderRight, value);
             }
         }
 
-        public bool start
+        public bool options
         {
-            get { return buttons.HasFlag(DualShock4Buttons.Start); }
+            get { return buttons.HasFlag(DualShock4Buttons.Options); }
             set
             {
-                _report.SetButtonState(DualShock4Buttons.Start, value);
+                _report.SetButtonState(DualShock4Buttons.Options, value);
             }
         }
 
-        public bool back
+        public bool share
         {
-            get { return buttons.HasFlag(DualShock4Buttons.Back); }
+            get { return buttons.HasFlag(DualShock4Buttons.Share); }
             set
             {
-                _report.SetButtonState(DualShock4Buttons.Back, value);
+                _report.SetButtonState(DualShock4Buttons.Share, value);
             }
         }
+        
 
         public bool up
         {
-            get { return buttons.HasFlag(DualShock4Buttons.Up); }
+            get { return _DpadFlags.HasFlag(dpadFlags.Up); }
             set
             {
-                _report.SetButtonState(DualShock4Buttons.Up, value);
+                if (value)
+                    _DpadFlags |= dpadFlags.Up;
+                else
+                    _DpadFlags &= ~dpadFlags.Up;
+                
             }
         }
 
         public bool down
         {
-            get { return buttons.HasFlag(DualShock4Buttons.Down); }
+            get { return buttons.HasFlag(DualShock4DPadValues.South); }
             set
             {
-                _report.SetButtonState(DualShock4Buttons.Down, value);
+                if (value)
+                    _DpadFlags |= dpadFlags.Down;
+                else
+                    _DpadFlags &= ~dpadFlags.Down;
             }
         }
 
         public bool left
         {
-            get { return buttons.HasFlag(DualShock4Buttons.Left); }
+            get { return buttons.HasFlag(DualShock4DPadValues.West); }
             set
             {
-                _report.SetButtonState(DualShock4Buttons.Left, value);
+                if (value)
+                    _DpadFlags |= dpadFlags.Left;
+                else
+                    _DpadFlags &= ~dpadFlags.Left;
             }
         }
 
         public bool right
         {
-            get { return buttons.HasFlag(DualShock4Buttons.Right); }
+            get { return buttons.HasFlag(DualShock4DPadValues.East); }
             set
             {
-                _report.SetButtonState(DualShock4Buttons.Right, value);
+                if (value)
+                    _DpadFlags |= dpadFlags.Right;
+                else
+                    _DpadFlags &= ~dpadFlags.Right;
             }
         }
 
         public bool leftThumb
         {
-            get { return buttons.HasFlag(DualShock4Buttons.LeftThumb); }
+            get { return buttons.HasFlag(DualShock4Buttons.ThumbLeft); }
             set
             {
-                _report.SetButtonState(DualShock4Buttons.LeftThumb, value);
+                _report.SetButtonState(DualShock4Buttons.ThumbLeft, value);
             }
         }
 
         public bool rightThumb
         {
-            get { return buttons.HasFlag(DualShock4Buttons.RightThumb); }
+            get { return buttons.HasFlag(DualShock4Buttons.ThumbRight); }
             set
             {
-                _report.SetButtonState(DualShock4Buttons.RightThumb, value);
+                _report.SetButtonState(DualShock4Buttons.ThumbRight, value);
             }
         }
 
@@ -610,7 +646,7 @@ namespace FreePIE.Core.Plugins
             {
                 if (isBetween(value, 0, 1))
                 {
-                    var v = (short)ensureMapRange(value, 0, 1, 0, 255);
+                    var v = (byte)ensureMapRange(value, 0, 1, 0, 255);
                     _report.SetAxis(DualShock4Axes.LeftTrigger, v);
                 }
             }
@@ -624,7 +660,7 @@ namespace FreePIE.Core.Plugins
             {
                 if (isBetween(value, 0, 1))
                 {
-                    var v = (short)ensureMapRange(value, 0, 1, 0, 255);
+                    var v = (byte)ensureMapRange(value, 0, 1, 0, 255);
                     _report.SetAxis(DualShock4Axes.RightTrigger, v);
                 }
             }
@@ -641,7 +677,7 @@ namespace FreePIE.Core.Plugins
             }
             set
             {
-                _report.SetAxis(DualShock4Axes.LeftThumbX, (short)ensureMapRange(value, -1, 1, -32768, 32767));
+                _report.SetAxis(DualShock4Axes.LeftThumbX,(byte) ensureMapRange(value, -1, 1, -256, 257)); //(short)ensureMapRange(value, -1, 1, -32768, 32767));
             }
         }
 
@@ -656,7 +692,8 @@ namespace FreePIE.Core.Plugins
             }
             set
             {
-                _report.SetAxis(DualShock4Axes.LeftThumbY, (short)ensureMapRange(value, -1, 1, -32768, 32767));
+                //_report.SetAxis(DualShock4Axes.LeftThumbY, (short)ensureMapRange(value, -1, 1, -32768, 32767));
+                _report.SetAxis(DualShock4Axes.RightThumbY, (byte)ensureMapRange(value, -1, 1, -256, 257));
             }
         }
 
@@ -671,7 +708,7 @@ namespace FreePIE.Core.Plugins
             }
             set
             {
-                _report.SetAxis(DualShock4Axes.RightThumbX, (short)ensureMapRange(value, -1, 1, -32768, 32767));
+                _report.SetAxis(DualShock4Axes.RightThumbX, (byte)ensureMapRange(value, -1, 1, -32768, 32767));
             }
 
         }
@@ -688,7 +725,7 @@ namespace FreePIE.Core.Plugins
             }
             set
             {
-                _report.SetAxis(DualShock4Axes.RightThumbY, (short)ensureMapRange(value, -1, 1, -32768, 32767));
+                _report.SetAxis(DualShock4Axes.RightThumbY, (byte)ensureMapRange(value, -1, 1, -32768, 32767));
             }
 
         }
@@ -714,6 +751,39 @@ namespace FreePIE.Core.Plugins
         private double ensureMapRange(double x, double xMin, double xMax, double yMin, double yMax)
         {
             return Math.Max(Math.Min(((x - xMin) / (xMax - xMin)) * (yMax - yMin) + yMin, yMax), yMin);
+        }
+
+        [Flags]
+        private enum dpadFlags
+        {
+            Up = 1 << 0, Right = 1 << 1, Down = 1 << 2, Left = 1 << 3
+        }
+
+        dpadFlags _DpadFlags = 0;
+
+        private static DualShock4DPadValues conv(dpadFlags flags)
+        {
+
+            DualShock4DPadValues retval = 0;
+
+            var g = new List<KeyValuePair<dpadFlags, DualShock4DPadValues>>()
+            {
+                new KeyValuePair<dpadFlags, DualShock4DPadValues>( dpadFlags.Up,DualShock4DPadValues.North),
+                new KeyValuePair<dpadFlags, DualShock4DPadValues>( dpadFlags.Up | dpadFlags.Right,DualShock4DPadValues.Northeast ),
+                new KeyValuePair<dpadFlags, DualShock4DPadValues>( dpadFlags.Right, DualShock4DPadValues.East ),
+                new KeyValuePair<dpadFlags, DualShock4DPadValues>( dpadFlags.Right | dpadFlags.Down,DualShock4DPadValues.Southeast),
+                new KeyValuePair<dpadFlags, DualShock4DPadValues>( dpadFlags.Down, DualShock4DPadValues.South),
+                new KeyValuePair<dpadFlags, DualShock4DPadValues>( dpadFlags.Down | dpadFlags.Left, DualShock4DPadValues.Southwest),
+                new KeyValuePair<dpadFlags, DualShock4DPadValues>( dpadFlags.Left, DualShock4DPadValues.West),
+                new KeyValuePair<dpadFlags, DualShock4DPadValues>( dpadFlags.Up | dpadFlags.Left, DualShock4DPadValues.Northwest)
+            };
+            //Console.WriteLine(g.Aggregate((a,c) => string.Format("{0},{1}",a,c)));
+            if (flags != 0)
+                retval = g.Single(gg => gg.Key == flags).Value;
+
+
+            return retval;
+
         }
 
         public void Disconnect()
