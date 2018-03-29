@@ -95,8 +95,9 @@ namespace FreePIE.Core.Plugins
             }
             catch (Exception x)
             {
-                //TODO Log exception
                 _errorOccured = ErrorState.OPEN_FAILED;
+                throw new Exception("You must install the ViGEM Virtual Bus driver. See https://github.com/nefarius/ViGEm/wiki/Driver-Installation");
+                
             }
 
             return base.Start();
@@ -181,12 +182,12 @@ namespace FreePIE.Core.Plugins
             return Math.Max(Math.Min(((x - xMin) / (xMax - xMin)) * (yMax - yMin) + yMin, yMax), yMin);
         }
 
-        public abstract void Disconnect();
+        internal abstract void Disconnect();
 
         internal abstract void Update();
     }
 
-    [Global(Name = "xbox")]
+    [Global(Name = "xinput")]
     public class XboxGlobal : VigemGlobal, IDisposable
     {
         //private ViGemPlugin _plugin;
@@ -235,14 +236,14 @@ namespace FreePIE.Core.Plugins
         public bool a
         {
             get { return buttons.HasFlag(Xbox360Buttons.A); }
-            set { _report.SetButtonState(Xbox360Buttons.A, value);         }
+            set { if(value)_report.SetButtons(Xbox360Buttons.A); }
         }
 
         public bool b
         {
             get { return buttons.HasFlag(Xbox360Buttons.B); }
             set {
-                _report.SetButtonState(Xbox360Buttons.B, value);
+                if(value)_report.SetButtons(Xbox360Buttons.B);
             }
         }
 
@@ -250,7 +251,7 @@ namespace FreePIE.Core.Plugins
         {
             get { return  buttons.HasFlag(Xbox360Buttons.X);  }
             set {
-                _report.SetButtonState(Xbox360Buttons.X, value);
+                if(value)_report.SetButtons(Xbox360Buttons.X);
             }
         }
 
@@ -258,7 +259,7 @@ namespace FreePIE.Core.Plugins
         {
             get { return  buttons.HasFlag(Xbox360Buttons.Y); }
             set {
-                _report.SetButtonState(Xbox360Buttons.Y,value);
+                if(value)_report.SetButtons(Xbox360Buttons.Y);
             }
         }
 
@@ -266,7 +267,7 @@ namespace FreePIE.Core.Plugins
         {
             get { return  buttons.HasFlag(Xbox360Buttons.LeftShoulder); }
             set {
-                _report.SetButtonState(Xbox360Buttons.LeftShoulder,value);
+                if(value)_report.SetButtons(Xbox360Buttons.LeftShoulder);
             }
         }
 
@@ -274,7 +275,7 @@ namespace FreePIE.Core.Plugins
         {
             get { return  buttons.HasFlag(Xbox360Buttons.RightShoulder); }
             set {
-                _report.SetButtonState(Xbox360Buttons.RightShoulder, value);
+                if(value)_report.SetButtons(Xbox360Buttons.RightShoulder);
             }
         }
 
@@ -282,7 +283,7 @@ namespace FreePIE.Core.Plugins
         {
             get { return  buttons.HasFlag(Xbox360Buttons.Start); }
             set {
-                _report.SetButtonState(Xbox360Buttons.Start, value);
+                if(value)_report.SetButtons(Xbox360Buttons.Start);
             }
         }
 
@@ -291,7 +292,7 @@ namespace FreePIE.Core.Plugins
             get { return  buttons.HasFlag(Xbox360Buttons.Back); }
             set
             {
-                _report.SetButtonState(Xbox360Buttons.Back, value);
+                if(value)_report.SetButtons(Xbox360Buttons.Back);
             }
         }
 
@@ -300,7 +301,7 @@ namespace FreePIE.Core.Plugins
             get { return  buttons.HasFlag(Xbox360Buttons.Up); }
             set
             {
-                _report.SetButtonState(Xbox360Buttons.Up, value);
+                if(value)_report.SetButtons(Xbox360Buttons.Up);
             }
         }
 
@@ -309,7 +310,7 @@ namespace FreePIE.Core.Plugins
             get { return  buttons.HasFlag(Xbox360Buttons.Down); }
             set
             {
-                _report.SetButtonState(Xbox360Buttons.Down, value);
+                if(value)_report.SetButtons(Xbox360Buttons.Down);
             }
         }
 
@@ -318,7 +319,7 @@ namespace FreePIE.Core.Plugins
             get { return  buttons.HasFlag(Xbox360Buttons.Left);  }
             set
             {
-                _report.SetButtonState(Xbox360Buttons.Left, value);
+                if(value)_report.SetButtons(Xbox360Buttons.Left);
             }
         }
 
@@ -327,7 +328,7 @@ namespace FreePIE.Core.Plugins
             get { return  buttons.HasFlag(Xbox360Buttons.Right); }
             set
             {
-                _report.SetButtonState(Xbox360Buttons.Right, value);
+                if(value)_report.SetButtons(Xbox360Buttons.Right);
             }
         }
 
@@ -336,7 +337,7 @@ namespace FreePIE.Core.Plugins
             get { return buttons.HasFlag(Xbox360Buttons.LeftThumb); }
             set
             {
-                _report.SetButtonState(Xbox360Buttons.LeftThumb, value);
+                if(value)_report.SetButtons(Xbox360Buttons.LeftThumb);
             }
         }
 
@@ -345,7 +346,7 @@ namespace FreePIE.Core.Plugins
             get { return buttons.HasFlag(Xbox360Buttons.RightThumb); }
             set
             {
-                _report.SetButtonState(Xbox360Buttons.RightThumb, value);
+                if(value)_report.SetButtons(Xbox360Buttons.RightThumb);
             }
         }
 
@@ -444,14 +445,14 @@ namespace FreePIE.Core.Plugins
 
         
 
-        public override void Disconnect()
+        internal override void Disconnect()
         {
             if (_controller != null)
             {
                 _controller.Disconnect();
             }
         }
-        public void Dispose()
+        void IDisposable.Dispose()
         {
             if(_controller != null)
             {
@@ -465,18 +466,15 @@ namespace FreePIE.Core.Plugins
 
     [Global(Name = "dualshock")]
     public class DS4Global : VigemGlobal, IDisposable
-    {
-        public readonly int index = -1;
-
-        private ViGemPlugin _plugin;
+    {             
 
         private DualShock4Controller _controller;
-        private DualShock4Report _report = new DualShock4Report();
-
-        //public x360ButtonCollection button { get; }
+        private DualShock4Report _report;
 
         public DS4Global(int index, ViGemPlugin plugin) :base(index)
         {
+            _report = new DualShock4Report();
+
             _controller = new DualShock4Controller(plugin.Client);
             _controller.FeedbackReceived += _controller_FeedbackReceived;
             _controller.Connect();
@@ -507,6 +505,12 @@ namespace FreePIE.Core.Plugins
                 _controller.SendReport(_report);                
             }
             _report = new DualShock4Report();
+            leftStickX = 0;
+            leftStickY = 0;
+            rightStickX = 0;
+            rightStickY = 0;
+
+            
 
         }
 
@@ -524,7 +528,7 @@ namespace FreePIE.Core.Plugins
         public bool cross
         {
             get { return buttons.HasFlag(DualShock4Buttons.Cross); }
-            set { _report.SetButtonState(DualShock4Buttons.Cross, value); }
+            set { if(value)_report.SetButtons(DualShock4Buttons.Cross); }
         }
 
         public bool circle
@@ -532,7 +536,7 @@ namespace FreePIE.Core.Plugins
             get { return buttons.HasFlag(DualShock4Buttons.Circle); }
             set
             {
-                _report.SetButtonState(DualShock4Buttons.Circle, value);
+                if(value)_report.SetButtons(DualShock4Buttons.Circle);
             }
         }
 
@@ -541,7 +545,7 @@ namespace FreePIE.Core.Plugins
             get { return buttons.HasFlag(DualShock4Buttons.Square); }
             set
             {
-                _report.SetButtonState(DualShock4Buttons.Square, value);
+                if(value)_report.SetButtons(DualShock4Buttons.Square);
             }
         }
 
@@ -550,7 +554,7 @@ namespace FreePIE.Core.Plugins
             get { return buttons.HasFlag(DualShock4Buttons.Triangle); }
             set
             {
-                _report.SetButtonState(DualShock4Buttons.Triangle, value);
+                if(value)_report.SetButtons(DualShock4Buttons.Triangle);
             }
         }
 
@@ -559,7 +563,7 @@ namespace FreePIE.Core.Plugins
             get { return buttons.HasFlag(DualShock4Buttons.ShoulderLeft); }
             set
             {
-                _report.SetButtonState(DualShock4Buttons.ShoulderLeft, value);
+                if(value)_report.SetButtons(DualShock4Buttons.ShoulderLeft);
             }
         }
 
@@ -568,25 +572,25 @@ namespace FreePIE.Core.Plugins
             get { return buttons.HasFlag(DualShock4Buttons.ShoulderRight); }
             set
             {
-                _report.SetButtonState(DualShock4Buttons.ShoulderRight, value);
+                if(value)_report.SetButtons(DualShock4Buttons.ShoulderRight);
             }
         }
 
-        public bool start
+        public bool options
         {
             get { return buttons.HasFlag(DualShock4Buttons.Options); }
             set
             {
-                _report.SetButtonState(DualShock4Buttons.Options, value);
+                if(value)_report.SetButtons(DualShock4Buttons.Options);
             }
         }
 
-        public bool select
+        public bool share
         {
             get { return buttons.HasFlag(DualShock4Buttons.Share); }
             set
             {
-                _report.SetButtonState(DualShock4Buttons.Share, value);
+                if(value)_report.SetButtons(DualShock4Buttons.Share);
             }
         }
         
@@ -640,28 +644,48 @@ namespace FreePIE.Core.Plugins
             }
         }
 
-        public bool leftThumb
+        public bool L3
         {
             get { return buttons.HasFlag(DualShock4Buttons.ThumbLeft); }
             set
             {
-                _report.SetButtonState(DualShock4Buttons.ThumbLeft, value);
+                if(value)_report.SetButtons(DualShock4Buttons.ThumbLeft);
             }
         }
 
-        public bool rightThumb
+        public bool R3
         {
             get { return buttons.HasFlag(DualShock4Buttons.ThumbRight); }
             set
             {
-                _report.SetButtonState(DualShock4Buttons.ThumbRight, value);
+                if(value)_report.SetButtons(DualShock4Buttons.ThumbRight);
+            }
+        }
+
+        public bool PS
+        {
+            get { return ((DualShock4SpecialButtons)_report.SpecialButtons).HasFlag(DualShock4SpecialButtons.Ps); }
+            set
+            {
+                if(value)
+                    _report.SetSpecialButtons(DualShock4SpecialButtons.Ps);
+            }
+        }
+
+        public bool touchPad
+        {
+            get { return ((DualShock4SpecialButtons)_report.SpecialButtons).HasFlag(DualShock4SpecialButtons.Touchpad); }
+            set
+            {
+                if (value)
+                    _report.SetSpecialButtons(DualShock4SpecialButtons.Touchpad);
             }
         }
 
         /// <summary>
         /// Acceptable values range 0 - 1
         /// </summary>
-        public double leftTrigger
+        public double L2
         {
             get { return _report.LeftTrigger / 255.0; }
             set
@@ -675,7 +699,7 @@ namespace FreePIE.Core.Plugins
         }
 
 
-        public double rightTrigger
+        public double R2
         {
             get { return _report.RightTrigger / 255.0; }
             set
@@ -708,7 +732,7 @@ namespace FreePIE.Core.Plugins
             }
             set
             {
-                _report.SetAxis(DualShock4Axes.LeftThumbY, (byte)ensureMapRange(value, -1, 1, 0, 255));
+                _report.SetAxis(DualShock4Axes.LeftThumbY, (byte)ensureMapRange(value, 1, -1, 0, 255));
             }
         }
 
@@ -734,7 +758,7 @@ namespace FreePIE.Core.Plugins
             }
             set
             {
-                _report.SetAxis(DualShock4Axes.RightThumbY, (byte)ensureMapRange(value, -1, 1, 0, 255));
+                _report.SetAxis(DualShock4Axes.RightThumbY, (byte)ensureMapRange(value, 1, -1, 0, 255));
             }
 
         }
@@ -783,14 +807,15 @@ namespace FreePIE.Core.Plugins
 
         }
 
-        public override void Disconnect()
+        internal override void Disconnect()
         {
             if (_controller != null)
             {
                 _controller.Disconnect();
             }
         }
-        public void Dispose()
+        
+        void IDisposable.Dispose()
         {
             if (_controller != null)
             {
