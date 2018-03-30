@@ -64,6 +64,9 @@
     <Reference Include="System.Core" />
     <Reference Include="System.Speech" />
     <Reference Include="System.Windows.Forms" />
+    <Reference Include="TankStickWrapper">
+      <HintPath>..\Lib\tankstickWrapper\TankStickWrapper.dll</HintPath>
+    </Reference>
     <Reference Include="Tobii.EyeX.Client.Net20">
       <HintPath>..\Lib\Tobii\Tobii.EyeX.Client.Net20.dll</HintPath>
       <Private>False</Private>
@@ -116,6 +119,7 @@
     <Compile Include="SpeechPlugin.cs" />
     <Compile Include="Strategies\GetPressedStrategy.cs" />
     <Compile Include="Strategies\SetPressedStrategy.cs" />
+    <Compile Include="TankstickPlugin.cs" />
     <Compile Include="TobiiEyeXPlugin.cs" />
     <Compile Include="TrackIRPlugin.cs" />
     <Compile Include="TrackIR\DllRegistrar.cs" />
