@@ -558,7 +558,7 @@ namespace FreePIE.Core.Plugins
             }
         }
 
-        public bool L1
+        public bool L2
         {
             get { return buttons.HasFlag(DualShock4Buttons.ShoulderLeft); }
             set
@@ -567,7 +567,7 @@ namespace FreePIE.Core.Plugins
             }
         }
 
-        public bool R1
+        public bool R2
         {
             get { return buttons.HasFlag(DualShock4Buttons.ShoulderRight); }
             set
@@ -685,7 +685,7 @@ namespace FreePIE.Core.Plugins
         /// <summary>
         /// Acceptable values range 0 - 1
         /// </summary>
-        public double L2
+        public double L1
         {
             get { return _report.LeftTrigger / 255.0; }
             set
@@ -699,7 +699,7 @@ namespace FreePIE.Core.Plugins
         }
 
 
-        public double R2
+        public double R1
         {
             get { return _report.RightTrigger / 255.0; }
             set
@@ -728,7 +728,7 @@ namespace FreePIE.Core.Plugins
         {
             get
             {
-                return mapRange(_report.LeftThumbY, 0, 255, -1, 1); 
+                return -mapRange(_report.LeftThumbY, 0, 255, -1, 1); 
             }
             set
             {
@@ -754,7 +754,7 @@ namespace FreePIE.Core.Plugins
         {
             get
             {
-                return mapRange(_report.RightThumbY, 0, 255, -1, 1); 
+                return -mapRange(_report.RightThumbY, 0, 255, -1, 1); 
             }
             set
             {
