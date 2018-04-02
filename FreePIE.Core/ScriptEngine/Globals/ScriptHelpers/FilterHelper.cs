@@ -145,7 +145,7 @@ namespace FreePIE.Core.ScriptEngine.Globals.ScriptHelpers
             None, SCurve, JCurve, Custom
         }
 
-        const int AMAX = 32767, AMAXF = 32768;
+        
         double fcurve(double x, double lower, double center, double upper, double trim, int curve)
         {
             double m, M, cM, cm;
@@ -271,6 +271,8 @@ namespace FreePIE.Core.ScriptEngine.Globals.ScriptHelpers
         }*/
         private double AxisVal(double v, sAxis d)
         {
+            //int AMAX = 32767, AMAXF = 32768;
+            int AMAX = 1, AMAXF = 1;
             switch (d.curveMode)
             {
                 case CurveMode.SCurve:
@@ -280,7 +282,7 @@ namespace FreePIE.Core.ScriptEngine.Globals.ScriptHelpers
                     v = AMAX * P2Curve(v / AMAXF, -d.ab, 1, d.ab);
                     break;
                 case CurveMode.Custom://TODO
-                    v = AMAX * GetCustomCurveValue((int)d.curveMode, v * 50 / AMAXF + 50) / 50 - AMAX; 
+                   // v = AMAX * GetCustomCurveValue((int)d.curveMode, v * 50 / AMAXF + 50) / 50 - AMAX; 
                     break;
                
             }
